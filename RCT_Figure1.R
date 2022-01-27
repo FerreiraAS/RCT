@@ -1,0 +1,89 @@
+FIGURE.1 <- function(dataset, variables, bw.factor, wt.labels, missing, m.imputations, xlabs, ylab, alpha) {
+	# LAST MODIFIED: NOV 30, 2021
+	
+	# required packages
+	require("Rmisc")
+	library("Rmisc")
+
+	# This function outputs a plot for two-way mixed-models.
+	# dataset: a 2D dataframe (rows: participants, columns: variables)
+	# variables: a 1D variable labels (within-group)
+	# bw.factor: a 1D between-group factor
+	# wt.labels: a 1D variable labels for each
+	# level missing: method for handling missing balues (mean inputation, last value carried forward)
+	# xlabs: a 1D vector of labels for the X axis (within-group factor)
+	# ylabs: a string label for the Y axis (outcome)
+
+	# confirma a estrutura dos dados
+	dataset <- data.frame(dataset)
+	bw.factor <- factor(bw.factor, exclude = NULL)
+
+	# remove variaveis nao usadas
+	dataset <- dataset[, colnames(dataset) %in% variables]
+
+	# preparação e análise do modelo misto
+	ID_M <- rep(seq(1:length(bw.factor)), length(wt.labels))
+	TIME_M <- as.factor(c(rep(seq(1, length(wt.labels)), each = length(bw.factor))))
+	GROUP_M <- rep(bw.factor, length(wt.labels))
+	OUTCOME_ORIG <- c(as.matrix(dataset))
+	OUTCOME_M <- c(as.matrix(dataset))
+
+	# decide como lidar com os dados perdidos
+	if (missing == "complete.cases") {
+		include <- complete.cases(dataset)
+		dataset <- dataset[include == TRUE, ]
+		bw.factor <- bw.factor[include == TRUE]
+		ID_M <- rep(seq(1:length(bw.factor)), length(wt.labels))
+		TIME_M <- as.factor(c(rep(seq(1, length(wt.labels)), each = length(bw.factor))))
+		GROUP_M <- rep(bw.factor, length(wt.labels))
+		OUTCOME_ORIG <- c(as.matrix(dataset))
+		OUTCOME_M <- c(as.matrix(dataset))
+	}
+	if (missing == "mean.imputation") {
+		# calcula a média para imputação para cada grupo
+		for (i in 1:length(wt.labels)) {
+			temp.imp <- dataset[, i]
+			for (j in 1:nlevels(bw.factor)) {
+				temp.imp[which(is.na(temp.imp) & bw.factor == levels(bw.factor)[j])] <- mean(temp.imp[which(bw.factor == levels(bw.factor)[j])], 
+					na.rm = TRUE)
+			}
+			dataset[, i] <- temp.imp
+		}
+		OUTCOME_M <- c(as.matrix(dataset))
+	}
+	if (missing == "last.value.carried.forward") {
+		include <- complete.cases(dataset[, 1])
+		dataset <- dataset[include == TRUE, ]
+		bw.factor <- bw.factor[include == TRUE]
+		ID_M <- rep(seq(1:length(bw.factor)), length(wt.labels))
+		TIME_M <- as.factor(c(rep(seq(1, length(wt.labels)), each = length(bw.factor))))
+		GROUP_M <- rep(bw.factor, length(wt.labels))
+		# repete o último dado observado
+		for (i in 1:dim(dataset)[1]) {
+			# linha de base nunca terá dado perdido
+			for (j in 2:dim(dataset)[2]) {
+				if (is.na(dataset[i, j])) {
+					dataset[i, j] <- dataset[i, j - 1]
+				}
+			}
+		}
+		OUTCOME_M <- c(as.matrix(dataset))
+	}
+
+	# calculate and plot CI
+	myCI <- group.CI(OUTCOME_M ~ GROUP_M * as.factor(TIME_M), data = cbind(GROUP_M, as.factor(TIME_M), OUTCOME_M), ci = 1 - alpha)
+	myCI[, 2] <- rep(wt.labels, each = nlevels(bw.factor))
+	symbols <- c(21, 19)
+
+	# interaction plot with %CI
+	plot(NA, xaxt = "n", xlab = xlabs, ylab = ylab, xlim = c(min(wt.labels), max(wt.labels)), ylim = c(min(myCI[, 5]) - min(myCI[, 5]) * 
+		0.1, max(myCI[, 3]) + max(myCI[, 3]) * 0.1))
+	for (i in 1:length(bw.factor)) {
+		lines(x = myCI[myCI[, 1] == i, 2], y = myCI[myCI[, 1] == i, 4], type = "b", pch = symbols[i], lwd = 1)
+	}
+	for (i in 1:dim(myCI)[1]) {
+		lines(x = rep(myCI[i, 2], 2), y = c(myCI[i, 5], myCI[i, 3]), lty = "dashed", lwd = 1, col = "black")
+		axis(side = 1, at = wt.labels, labels = wt.labels)
+	}
+	legend(x = "topleft", legend = levels(GROUP_M), pch = symbols, lwd = 1)
+}
