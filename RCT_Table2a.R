@@ -95,7 +95,7 @@ TABLE.2a <- function(dataset, variables, covariate, bw.factor, control.g, wt.lab
 		GROUP_M <- rep(bw.factor, length(wt.labels))
 		OUTCOME_ORIG <- c(as.matrix(dataset))
 		OUTCOME_M <- c(as.matrix(dataset))
-		if (covariate != NULL) {
+		if (!is.null(covariate)) {
 			COVARIATE_M <- COVARIATE_M[include == TRUE]
 		}
 	}
@@ -247,7 +247,7 @@ TABLE.2a <- function(dataset, variables, covariate, bw.factor, control.g, wt.lab
 		BASELINE_M <- matrix(OUTCOME_M, ncol = length(wt.labels), byrow = FALSE)[, 1]
 		FOLLOWUP_M <- matrix(OUTCOME_M, ncol = length(wt.labels), byrow = FALSE)[, i]
 		CHANGE_M <- FOLLOWUP_M - BASELINE_M
-		df <- data.frame(ID, bw.factor, BASELINE_M, FOLLOWUP_M, CHANGE_M)
+		df <- data.frame(ID, bw.factor, BASELINE_M, FOLLOWUP_M, CHANGE_M, COVARIATE_M)
 		if (missing != "multiple.imputation") {
 			if (!is.null(covariate)) {
 				mod2 <- lme(CHANGE_M ~ bw.factor + BASELINE_M + COVARIATE_M, random = ~1 | ID, data = df)
