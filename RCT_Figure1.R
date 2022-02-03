@@ -7,12 +7,12 @@ FIGURE.1 <- function(dataset, variables, covariate, bw.factor, wt.labels, missin
 
 	# This function outputs a plot for two-way mixed-models.
 	# dataset: a 2D dataframe (rows: participants, columns: variables)
-	# variables: a 1D variable labels (within-group)
-	# bw.factor: a 1D between-group factor
-	# wt.labels: a 1D variable labels for each
-	# level missing: method for handling missing balues (mean inputation, last value carried forward)
-	# xlabs: a 1D vector of labels for the X axis (within-group factor)
-	# ylabs: a string label for the Y axis (outcome)
+# variables: a 1D variable labels (within-group)
+# bw.factor: a 1D between-group factor
+# wt.labels: a 1D variable labels for each
+# level missing: method for handling missing balues (mean inputation, last value carried forward)
+# xlabs: a 1D vector of labels for the X axis (within-group factor)
+# ylabs: a string label for the Y axis (outcome)
 
 	# confirma a estrutura dos dados
 	dataset <- data.frame(dataset)
@@ -63,17 +63,28 @@ FIGURE.1 <- function(dataset, variables, covariate, bw.factor, wt.labels, missin
 	# calculate and plot CI
 	myCI <- group.CI(OUTCOME_M ~ GROUP_M * as.factor(TIME_M), data = cbind(GROUP_M, as.factor(TIME_M), OUTCOME_M), ci = 1 - alpha)
 	myCI[, 2] <- rep(wt.labels, each = nlevels(bw.factor))
-	symbols <- c(21, 19)
+	symbols <- c(15, 16, 17, 18)
+
+	jitter <- rep(seq(from = -0.25, to = 0.25, length.out = nlevels(bw.factor)), each = length(wt.labels))
+	jitter <- matrix(jitter, nrow = nlevels(bw.factor), ncol = length(unique(wt.labels)), byrow = TRUE)
 
 	# interaction plot with %CI
-	plot(NA, xaxt = "n", xlab = xlabs, ylab = ylab, xlim = c(min(wt.labels), max(wt.labels)), ylim = c(min(myCI[, 5]) - min(myCI[, 5]) * 0.1, max(myCI[, 
-		3]) + max(myCI[, 3]) * 0.1))
-	for (i in 1:length(bw.factor)) {
-		lines(x = myCI[myCI[, 1] == i, 2], y = myCI[myCI[, 1] == i, 4], type = "b", pch = symbols[i], lwd = 1)
-	}
+	# start empty area plot with main setup
+	plot(NA, xaxt = "n", xlab = xlabs, ylab = ylab, xlim = c(min(wt.labels) - 1.5, max(wt.labels) + 1.5), ylim = c(min(myCI[, 5]) - min(myCI[, 5]) * 
+		0.1, max(myCI[, 3]) + max(myCI[, 3]) * 0.1))
+	# plot CI intervals (vertical lines)
 	for (i in 1:dim(myCI)[1]) {
-		lines(x = rep(myCI[i, 2], 2), y = c(myCI[i, 5], myCI[i, 3]), lty = "dashed", lwd = 1, col = "black")
+		lines(x = rep(myCI[i, 2], 2) + jitter[i], y = c(myCI[i, 5], myCI[i, 3]), lty = "solid", lwd = 1.5, col = "darkgrey")
 		axis(side = 1, at = wt.labels, labels = wt.labels)
 	}
-	legend(x = "topleft", legend = levels(GROUP_M), pch = symbols, lwd = 1)
+	# plot CI intervals (symbols at end lines)
+	for (i in 1:dim(myCI)[1]) {
+		points(x = rep(myCI[i, 2], 2) + jitter[i], y = c(myCI[i, 5], myCI[i, 3]), pch = "−", cex = 1.5, lwd = 1.5, col = "darkgrey")
+	}
+	# plot point estimates
+	for (i in 1:nlevels(bw.factor)) {
+		lines(x = myCI[myCI[, 1] == i, 2] + jitter[i], y = myCI[myCI[, 1] == i, 4], type = "b", pch = symbols[i], lwd = 1, cex = 2)
+	}
+	# plot legend
+	legend(x = "topleft", legend = levels(GROUP_M), pch = symbols, cex = 1.25, bty = "n", horiz = TRUE, x.intersp = 1)
 }
