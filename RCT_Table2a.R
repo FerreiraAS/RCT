@@ -1,7 +1,6 @@
 TABLE.2a <- function(dataset, variables, covariate, bw.factor, control.g, wt.labels, missing = c("complete.cases", "mean.imputation", "multiple.imputation"), 
 	m.imputations, alpha, n.digits) {
-	# LAST MODIFIED: JAN 20, 2022
-	
+	# LAST MODIFIED: FEB 02, 2022	
 	# This function outputs a comparison table for two-way mixed-models
 	# dataset: a 2D dataframe (rows: participants, columns: variables)
 	# variables: a 1D variable labels (within-group)
@@ -247,11 +246,12 @@ TABLE.2a <- function(dataset, variables, covariate, bw.factor, control.g, wt.lab
 		BASELINE_M <- matrix(OUTCOME_M, ncol = length(wt.labels), byrow = FALSE)[, 1]
 		FOLLOWUP_M <- matrix(OUTCOME_M, ncol = length(wt.labels), byrow = FALSE)[, i]
 		CHANGE_M <- FOLLOWUP_M - BASELINE_M
-		df <- data.frame(ID, bw.factor, BASELINE_M, FOLLOWUP_M, CHANGE_M, COVARIATE_M)
 		if (missing != "multiple.imputation") {
 			if (!is.null(covariate)) {
+				df <- data.frame(ID, bw.factor, BASELINE_M, FOLLOWUP_M, CHANGE_M, COVARIATE_M)
 				mod2 <- lme(CHANGE_M ~ bw.factor + BASELINE_M + COVARIATE_M, random = ~1 | ID, data = df)
 			} else {
+				df <- data.frame(ID, bw.factor, BASELINE_M, FOLLOWUP_M, CHANGE_M)
 				mod2 <- lme(CHANGE_M ~ bw.factor + BASELINE_M, random = ~1 | ID, data = df)
 			}
 			mod2.sum <- summary(glht(mod2, linfct = mcp(bw.factor = "Tukey")), test = adjusted("holm"))
@@ -261,6 +261,11 @@ TABLE.2a <- function(dataset, variables, covariate, bw.factor, control.g, wt.lab
 			upp.ci <- round(confint(mod2.sum, level = 1 - alpha)$confint[, "upr"], digits = n.digits)
 			p.value <- summary(mod2)$tTable[, "p-value"][2]
 		} else {
+			if (!is.null(covariate)) {
+				df <- data.frame(ID, bw.factor, BASELINE_M, FOLLOWUP_M, CHANGE_M, COVARIATE_M)
+			} else {
+				df <- data.frame(ID, bw.factor, BASELINE_M, FOLLOWUP_M, CHANGE_M)
+			}
 			ini <- mice(data = df, maxit = 0)
 			pred <- ini$pred
 			pred["FOLLOWUP_M", "ID"] <- -2

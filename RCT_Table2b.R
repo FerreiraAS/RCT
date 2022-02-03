@@ -1,7 +1,6 @@
 TABLE.2b <- function(dataset, variables, covariate, bw.factor, control.g, wt.labels, missing = c("complete.cases", "mean.imputation", "multiple.imputation"), 
 	m.imputations, alpha, n.digits) {
-	# LAST MODIFIED: JAN 20, 2022
-	
+	# LAST MODIFIED: FEB 02, 2022	
 	# This function outputs a comparison table for two-way mixed-models
 	# dataset: a 2D dataframe (rows: participants, columns: variables)
 	# variables: a 1D variable labels (within-group)
@@ -94,7 +93,7 @@ TABLE.2b <- function(dataset, variables, covariate, bw.factor, control.g, wt.lab
 		GROUP_M <- rep(bw.factor, length(wt.labels))
 		OUTCOME_ORIG <- c(as.matrix(dataset))
 		OUTCOME_M <- c(as.matrix(dataset))
-		if (covariate != NULL) {
+		if (!is.null(covariate)) {
 			COVARIATE_M <- COVARIATE_M[include == TRUE]
 		}
 	}
