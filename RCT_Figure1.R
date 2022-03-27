@@ -14,6 +14,12 @@ FIGURE.1 <- function(dataset, variables, covariate, bw.factor, wt.labels, missin
 	# xlabs: a 1D vector of labels for the X axis (within-group factor)
 	# ylabs: a string label for the Y axis (outcome)
 
+	quiet <- function(x) {
+		sink(tempfile())
+		on.exit(sink())
+		invisible(force(x))
+	}
+
 	# confirma a estrutura dos dados
 	dataset <- data.frame(dataset)
 	bw.factor <- factor(bw.factor, exclude = NULL)
